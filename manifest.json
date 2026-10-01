@@ -1,0 +1,63 @@
+{
+  "name": "JCRGM Connect — Messenger, Ministry & Community Hub",
+  "short_name": "JCRGM",
+  "description": "Official JCRGM WhatsApp-style Messenger, Ministry Fellowship, Announcements & Team Communication Progressive Web App.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0b141a",
+  "theme_color": "#075E54",
+  "categories": ["social", "communication", "productivity", "lifestyle"],
+  "lang": "en",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "./icons/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/maskable-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "JCRGM Sanctuary & Announcements",
+      "short_name": "Announcements",
+      "description": "Open official JCRGM broadcasts and daily devotionals",
+      "url": "./index.html?chat=jcrgm-announcements",
+      "icons": [{ "src": "./icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Prayer & Fellowship Group",
+      "short_name": "Prayer Wall",
+      "description": "Join the live prayer & fellowship group chat",
+      "url": "./index.html?chat=jcrgm-prayer",
+      "icons": [{ "src": "./icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Status Updates",
+      "short_name": "Status",
+      "description": "View 24h community stories and testimonies",
+      "url": "./index.html?tab=status",
+      "icons": [{ "src": "./icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

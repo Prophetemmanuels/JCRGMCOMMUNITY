@@ -1,0 +1,12 @@
+{
+  "name": "jcrgm-connect-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Automated jsdom smoke suite for JCRGM Connect",
+  "scripts": {
+    "test": "node smoke.js"
+  },
+  "devDependencies": {
+    "jsdom": "^24.0.0"
+  }
+}

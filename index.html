@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <title>JCRGM Connect — WhatsApp-Style Messenger, Ministry & Organization Hub</title>
+  <meta name="description" content="JCRGM Connect: A WhatsApp-inspired Progressive Web App for messaging, ministry fellowship, announcements, team coordination, group communities, status stories, voice notes and calls. Syncs live via Supabase. Installable from GitHub Pages." />
+  <meta name="theme-color" content="#075E54" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="JCRGM" />
+  <meta property="og:title" content="JCRGM Connect" />
+  <meta property="og:description" content="Messenger • Ministry • Organization Hub — Installable WhatsApp-Style PWA powered by Supabase." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="./icons/og-banner.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="JCRGM Connect" />
+  <meta name="twitter:description" content="WhatsApp-Style Messenger for Ministry, Organizations & Teams. Installable PWA with live Supabase sync." />
+  <meta name="twitter:image" content="./icons/og-banner.png" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="./icons/favicon.svg" />
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+  <link rel="stylesheet" href="./css/styles.css" />
+</head>
+<body>
+
+<!-- ===================== SVG ICON SPRITE ===================== -->
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-search" viewBox="0 0 24 24"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path fill="currentColor" d="M3 18h18v-2H3zm0-5h18v-2H3zm0-7v2h18V6z"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path fill="currentColor" d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4zM9 2 7.17 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3.17L15 2zm3 15a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path fill="currentColor" d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zm-2 12H6v-2h12zm0-3H6V9h12zm0-3H6V6h12z"/></symbol>
+  <symbol id="i-newchat" viewBox="0 0 24 24"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM5 7h2v2H5zm4 0h2v2H9zm4 0h2v2h-2z" transform="rotate(90 12 12)"/></symbol>
+  <symbol id="i-status" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm0-14a6 6 0 0 0-6 6h2a4 4 0 0 1 8 0h2a6 6 0 0 0-6-6zm0 14a5.9 5.9 0 0 0 5.23-3.24L15.2 15.4A4 4 0 0 1 12 17a3.9 3.9 0 0 1-3.2-1.6l-2.02 1.35A5.9 5.9 0 0 0 12 18z" opacity="0"/><path fill="currentColor" d="M12 6.5c-3.03 0-5.5 2.47-5.5 5.5s2.47 5.5 5.5 5.5 5.5-2.47 5.5-55-2.47-5.5-5.5-5.5zm0 9a3.5 3.5 0 1 1 3.5-3.5 3.5 3.5 0 0 1-3.5 3.5z" transform="translate(0 1)"/><path fill="currentColor" d="M12 2.5A9.5 9.5 0 1 0 21.5 12 9.51 9.51 0 0 0 12 2.5zm0 17a7.5 7.5 0 1 1 7.5-7.5 7.51 7.51 0 0 1-7.5 7.5z" opacity=".55"/></symbol>
+  <symbol id="i-call" viewBox="0 0 24 24"><path fill="currentColor" d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.03-.24 11.36 11.36 0 0 0 3.58.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.36 11.36 0 0 0 .57 3.58 1 1 0 0 1-.25 1.03z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20z"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path fill="currentColor" d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><path fill="currentColor" d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5.3-3a5.3 5.3 0 0 1-10.6 0H4.7a7.3 7.3 0 0 0 6.3 7.21V21h2v-2.79a7.3 7.3 0 0 0 6.3-7.21z"/></symbol>
+  <symbol id="i-emoji" viewBox="0 0 24 24"><path fill="currentColor" d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z"/></symbol>
+  <symbol id="i-attach" viewBox="0 0 24 24"><path fill="currentColor" d="M16.5 6v11.5a4.5 4.5 0 0 1-9 0V5a3 3 0 0 1 6 0v10.5a1.5 1.5 0 0 1-3 0V6H9v9.5a3 3 0 0 0 6 0V5a4.5 4.5 0 0 0-9 0v12.5a5.5 5.5 0 0 0 11 0V6z"/></symbol>
+  <symbol id="i-video" viewBox="0 0 24 24"><path fill="currentColor" d="M17 10.5V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3.5l4 4v-11z"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path fill="currentColor" d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path fill="currentColor" d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path fill="currentColor" d="M16 9V4h1a2 2 0 0 0 0-4H7a2 2 0 0 0 0 4h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3z"/></symbol>
+  <symbol id="i-mute" viewBox="0 0 24 24"><path fill="currentColor" d="M16.5 12A1.5 1.5 0 0 0 15 10.5V6a3 3 0 0 0-5.68-1.39L12 7.5V19l-2 2V10.5L8 12l-4-4v10l1.79-1.79A5.02 5.02 0 0 0 7 17.5V10.5L5.5 12 18.6 1.4l1.41 1.41L16.5 12z" transform="scale(-1,1) translate(-24,0)"/></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24"><path fill="currentColor" d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5z"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path fill="currentColor" d="m12 17.27 5.18 3.13-1.37-5.89 4.57-3.96-6.02-.51L12 4.5 9.64 10.04l-6.02.51 4.57 3.96-1.37 5.89z"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path fill="currentColor" d="M12 22a2 2 0 0 0 2-2h-4a2 2 0 0 0 2 2zm6-6v-5a6 6 0 0 0-5-5.91V4a1 1 0 0 0-2 0v1.09A6 6 0 0 0 6 11v5l-2 2v1h16v-1z"/></symbol>
+  <symbol id="i-theme" viewBox="0 0 24 24"><path fill="currentColor" d="12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.39 5.39 0 0 1-4.4 2.26 5.4 5.4 0 0 1-5.4-5.4c0-1.81.9-3.42 2.26-4.4A9.4 9.4 0 0 0 12 3z" transform="rotate(20 12 12) scale(.95)"/><path fill="currentColor" d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 15h-2v-6h2zm0-8h-2V7h2z"/></symbol>
+  <symbol id="i-people" viewBox="0 0 24 24"><path fill="currentColor" d="M16 11a3 3 0 1 0-3-3 3 3 0 0 0 3 3zm-8 0a3 3 0 1 0-3-3 3 3 0 0 0 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05a4.5 4.5 0 0 1 1.97 3.05V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></symbol>
+  <symbol id="i-group" viewBox="0 0 24 24"><path fill="currentColor" d="M12 12.75A4.75 4.75 0 1 0 7.25 8 4.76 4.76 0 0 0 12 12.75zM12 15c-3 0-8 1.5-8 4.5V21h16v-1.5c0-3-5-4.5-8-4.5z" transform="translate(0 -1)"/><path fill="currentColor" d="M18 8a3 3 0 1 0-3-3 3 3 0 0 0 3 3zm0 1.5c-2.33 0-7 1.17-7 3.5V16h14v-3c0-2.33-4.67-3.5-7-3.5z"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM13 9V3.5L18.5 9z"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><path fill="currentColor" d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5z"/></symbol>
+  <symbol id="i-poll" viewBox="0 0 24 24"><path fill="currentColor" d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><path fill="currentColor" d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-3.34 0-10 1.67-10 5v2h20v-2c0-3.33-6.66-5-10-5z"/></symbol>
+  <symbol id="i-location" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 14.5 9 2.5 2.5 0 0 1 12 11.5z"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><path fill="currentColor" d="M18 8h-1V6A5 5 0 0 0 7 6v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2zM9 6a3 3 0 0 1 6 0v2H9zm3 14a2 2 0 1 1 2-2 2 2 0 0 1-2 2z"/></symbol>
+  <symbol id="i-reply" viewBox="0 0 24 24"><path fill="currentColor" d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6zM19 4h-3.5l-1-1h-5l-1 1H5v2h14z"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><path fill="currentColor" d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm0 16H8V7h11z"/></symbol>
+  <symbol id="i-forward" viewBox="0 0 24 24"><path fill="currentColor" d="M14 9V5l7 7-7 7v-4.1c-5 0-8.5 1.6-11 5.1 1-5 4-10 11-11z"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7zM5 18v2h14v-2z"/></symbol>
+  <symbol id="i-install" viewBox="0 0 24 24"><path fill="currentColor" d="M17 18v1H7v-1zm-5-2v5h2v-5zm4.5-6.5L14 8l-2 2-2-2-1.5 1.5L10 14h4zM19 3H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5v2h4v-2h5a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z" transform="scale(1,-1) translate(0,-24)"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path fill="currentColor" d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4z"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><use href="#i-call"/></symbol>
+</svg>
+
+<!-- ===================== APP ROOT ===================== -->
+<div id="app">
+
+  <!-- ============== ONBOARDING ============== -->
+  <div class="screen active" id="screen-onboarding">
+    <div class="onboard-card">
+      <img class="onboard-logo" src="./icons/icon-192.png" alt="JCRGM Connect" />
+      <h1>JCRGM<span> CONNECT</span></h1>
+      <p class="tagline" id="ob-tagline">Messenger • Ministry • Organization Hub</p>
+      <p class="blurb">WhatsApp-style messaging for your <strong>family</strong>, your <strong>ministry</strong> and your <strong>team</strong> — with live Supabase Cloud sync, Status stories, Voice notes &amp; Calls.</p>
+
+      <div class="field">
+        <label>Your Display Name</label>
+        <input id="ob-name" type="text" maxlength="28" placeholder="e.g. Chanda Mwansa" autocomplete="name" />
+      </div>
+      <div class="field">
+        <label>Role in JCRGM</label>
+        <select id="ob-role">
+          <option>Member</option>
+          <option>Pastor</option>
+          <option>Leader</option>
+          <option>Deacon</option>
+          <option>Worship Lead</option>
+          <option>Media Team</option>
+          <option>Youth Leader</option>
+          <option>Usher</option>
+          <option>Administrator</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Department / Team</label>
+        <input id="ob-dept" type="text" maxlength="32" placeholder="e.g. Media &amp; Tech Team" value="Community" />
+      </div>
+      <div class="field">
+        <label>Avatar Color</label>
+        <div class="color-row" id="ob-colors"></div>
+      </div>
+
+      <button class="btn-primary" id="ob-start">🚀 &nbsp;Enter JCRGM Connect</button>
+      <button class="btn-ghost" id="ob-cloud">☁️ &nbsp;Connect Supabase Cloud instead</button>
+
+      <div class="cloud-hint">
+        <b>Works instantly offline:</b> start chatting right away (stored on this device + synced across browser tabs). Tap <b>Connect Cloud</b> anytime to enable <b>live cross-device messaging</b> for everyone on GitHub Pages with one free Supabase project.
+      </div>
+      <div class="offline-badge"><span class="dot"></span> <span id="ob-mode">Local mode • ready</span></div>
+    </div>
+  </div>
+
+  <!-- ============== MAIN SCREEN ============== -->
+  <div class="screen" id="screen-main">
+    <header class="topbar">
+      <div class="brand">
+        <img class="brand-logo" src="./icons/icon-192.png" alt="" />
+        <div>
+          <div class="brand-name">JCRGM<span> CONNECT</span></div>
+          <div class="brand-sub" id="brand-sub">Messenger • Ministry • Organization Hub</div>
+        </div>
+      </div>
+      <button class="conn-pill" id="conn-pill" title="Cloud & sync status"><span class="dot"></span><span id="conn-text">LOCAL</span></button>
+      <button class="icon-btn" id="btn-search" title="Search"><svg width="21" height="21"><use href="#i-search"/></svg></button>
+      <button class="icon-btn" id="btn-menu" title="Menu"><svg width="21" height="21"><use href="#i-menu"/></svg></button>
+    </header>
+
+    <div class="views">
+      <!-- ---- CHATS TAB ---- -->
+      <section class="view active" id="view-chats">
+        <div class="search-row" id="search-row" style="display:none">
+          <div class="search-box">
+            <span class="s-icon"><svg width="16" height="16"><use href="#i-search"/></svg></span>
+            <input id="search-input" type="text" placeholder="Search chats, people, messages…" />
+            <button class="icon-btn" id="search-close" style="width:30px;height:30px;font-size:16px"><svg width="15" height="15"><use href="#i-x"/></svg></button>
+          </div>
+        </div>
+        <div class="chips" id="chat-chips">
+          <button class="chip active" data-filter="all">All</button>
+          <button class="chip" data-filter="unread">Unread</button>
+          <button class="chip" data-filter="ministry">⛪ Ministry</button>
+          <button class="chip" data-filter="team">💼 Team</button>
+          <button class="chip" data-filter="group">Groups</button>
+          <button class="chip" data-filter="direct">Direct</button>
+          <button class="chip" data-filter="pinned">📌 Pinned</button>
+        </div>
+        <div class="list-scroll" id="chats-list"></div>
+        <button class="fab" id="fab-new" title="New chat / New group"><svg width="24" height="24"><use href="#i-newchat"/></svg></button>
+      </section>
+
+      <!-- ---- STATUS TAB ---- -->
+      <section class="view" id="view-status">
+        <div class="list-scroll">
+          <div class="section-label">My status</div>
+          <div class="status-me" id="status-add-me">
+            <div class="avatar" id="status-my-avatar" style="background:#075E54">ME<span class="plus-badge">+</span></div>
+            <div>
+              <div class="sm-title">Add my status</div>
+              <div class="sm-sub">Share a 24-hour testimony, prayer point or praise report</div>
+            </div>
+          </div>
+          <div class="section-label" id="status-recent-label">Recent updates</div>
+          <div id="status-list"></div>
+        </div>
+      </section>
+
+      <!-- ---- CALLS TAB ---- -->
+      <section class="view" id="view-calls">
+        <div class="list-scroll">
+          <div class="section-label">Recent calls <span class="cnt" id="calls-cnt"></span></div>
+          <div id="calls-list"></div>
+          <div class="empty-state hidden" id="calls-empty">
+            <div class="big">📞</div>
+            <h3>No calls yet</h3>
+            <p>Call JCRGM members from any chat via the <b>Call</b> button in the chat header.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <nav class="bottomnav">
+      <button class="nav-item active" data-tab="chats">
+        <span class="nav-ico"><svg width="23" height="23"><use href="#i-chat"/></svg></span>
+        <span>Chats</span>
+        <span class="nav-badge hidden" id="badge-chats">0</span>
+      </button>
+      <button class="nav-item" data-tab="status">
+        <span class="nav-ico"><svg width="23" height="23"><use href="#i-status"/></svg></span>
+        <span>Status</span>
+        <span class="nav-badge hidden" id="badge-status">0</span>
+      </button>
+      <button class="nav-item" data-tab="calls">
+        <span class="nav-ico"><svg width="23" height="23"><use href="#i-call"/></svg></span>
+        <span>Calls</span>
+        <span class="nav-badge hidden" id="badge-calls">0</span>
+      </button>
+      <button class="nav-item" id="nav-cloud">
+        <span class="nav-ico"><svg width="23" height="23"><use href="#i-cloud"/></svg></span>
+        <span>Cloud</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- ============== CHAT SCREEN ============== -->
+  <div class="screen" id="screen-chat">
+    <header class="chat-header">
+      <button class="back-btn" id="chat-back"><svg width="23" height="23"><use href="#i-back"/></svg></button>
+      <div class="avatar group-avatar" id="chat-avatar">JC</div>
+      <div class="chat-title-block" id="chat-profile-open">
+        <div class="chat-title" id="chat-title">Chat</div>
+        <div class="chat-sub" id="chat-sub">tap for info</div>
+      </div>
+      <button class="icon-btn" id="chat-video" title="Video call"><svg width="21" height="21"><use href="#i-video"/></svg></button>
+      <button class="icon-btn" id="chat-call" title="Voice call"><svg width="19" height="19"><use href="#i-call"/></svg></button>
+      <button class="icon-btn" id="chat-kebab" title="More"><svg width="19" height="19" viewBox="0 0 24 24"><path fill="currentColor" d="M12 8a2 2 0 1 0-2-2 2 2 0 0 0 2 2zm0 2a2 2 0 1 0 2 2 2 2 0 0 0-2-2zm0 6a2 2 0 1 0 2 2 2 2 0 0 0-2-2z"/></svg></button>
+    </header>
+
+    <div class="chat-wallpaper" id="chat-wallpaper"></div>
+
+    <button class="jump-bottom" id="jump-bottom" title="Jump to latest"><span id="jb-inner">↓</span></button>
+
+    <div class="composer-wrap">
+      <div class="reply-bar" id="reply-bar">
+        <div class="rb-info">
+          <div class="rb-name" id="rb-name">Replying</div>
+          <div class="rb-text" id="rb-text"></div>
+        </div>
+        <button class="icon-btn" id="rb-cancel" style="width:34px;height:34px;font-size:17px"><svg width="15" height="15"><use href="#i-x"/></svg></button>
+      </div>
+
+      <div class="composer" id="composer">
+        <div class="input-shell" id="input-shell">
+          <button class="c-ico" id="btn-emoji" title="Emoji"><svg width="22" height="22"><use href="#i-emoji"/></svg></button>
+          <textarea id="msg-input" rows="1" placeholder="Type a message"></textarea>
+          <button class="c-ico" id="btn-attach" title="Attach"><svg width="21" height="21"><use href="#i-plus"/></svg></button>
+          <button class="c-ico hidden" id="btn-camera" title="Camera"><svg width="21" height="21"><use href="#i-camera"/></svg></button>
+        </div>
+        <div class="recording-ui" id="recording-ui">
+          <span class="rec-dot"></span>
+          <span class="rec-time" id="rec-time">0:00</span>
+          <div class="rec-wave" id="rec-wave"></div>
+          <span class="rec-hint">Recording…</span>
+          <button class="rec-cancel" id="rec-cancel">CANCEL</button>
+        </div>
+        <button class="send-btn" id="send-btn"><svg width="21" height="21" id="send-ico"><use href="#i-mic"/></svg></button>
+      </div>
+
+      <div class="channel-bar" id="channel-bar">
+        <span class="cb-ico">📢</span>
+        <span id="channel-bar-text">Official channel — only administrators can post announcements.</span>
+      </div>
+
+      <!-- Emoji panel -->
+      <div class="float-panel emoji-panel" id="emoji-panel">
+        <div class="emoji-recent-row">Frequently used</div>
+        <div class="emoji-grid" id="emoji-recent"></div>
+        <div class="emoji-cats" id="emoji-cats"></div>
+        <div class="emoji-grid" id="emoji-grid"></div>
+      </div>
+
+      <!-- Attach panel -->
+      <div class="float-panel attach-panel" id="attach-panel">
+        <button class="attach-item voice" data-attach="voice"><span class="a-ico"><svg width="21" height="21"><use href="#i-mic"/></svg></span>Voice note</button>
+        <button class="attach-item gallery" data-attach="image"><span class="a-ico"><svg width="21" height="21"><use href="#i-image"/></svg></span>Gallery</button>
+        <button class="attach-item camera" data-attach="camera"><span class="a-ico"><svg width="21" height="21"><use href="#i-camera"/></svg></span>Camera</button>
+        <button class="attach-item doc" data-attach="doc"><span class="a-ico"><svg width="21" height="21"><use href="#i-doc"/></svg></span>Document</button>
+        <button class="attach-item poll" data-attach="poll"><span class="a-ico"><svg width="21" height="21"><use href="#i-poll"/></svg></span>Poll</button>
+        <button class="attach-item contact" data-attach="contact"><span class="a-ico"><svg width="21" height="21"><use href="#i-user"/></svg></span>Contact</button>
+        <button class="attach-item scripture" data-attach="scripture"><span class="a-ico">📖</span>Scripture</button>
+        <button class="attach-item announce" data-attach="announce"><span class="a-ico">📣</span>Announce</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============== PROFILE SCREEN ============== -->
+  <div class="screen" id="screen-profile">
+    <header class="chat-header">
+      <button class="back-btn" id="profile-back"><svg width="23" height="23"><use href="#i-back"/></svg></button>
+      <div class="chat-title" id="profile-head-title">Profile</div>
+    </header>
+    <div class="list-scroll" style="padding: 18px 20px;">
+      <div class="profile-hero">
+        <div class="avatar" id="profile-avatar">JC</div>
+        <h2 id="profile-name">Name</h2>
+        <div class="ph-sub" id="profile-role">Role</div>
+      </div>
+      <div class="info-rows" id="profile-info"></div>
+      <div style="display:flex; gap:10px; margin-top:16px;" id="profile-actions">
+        <button class="btn teal" id="profile-msg-btn" style="flex:1">💬 Message</button>
+        <button class="btn soft" id="profile-call-btn" style="flex:1">📞 Call</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============== STATUS VIEWER ============== -->
+  <div id="status-viewer">
+    <div class="sv-progress" id="sv-progress"></div>
+    <div class="sv-header">
+      <div class="avatar xs" id="sv-avatar">S</div>
+      <div>
+        <div class="sv-name" id="sv-name">Name</div>
+        <div class="sv-time" id="sv-time">Today</div>
+      </div>
+      <button class="sv-close" id="sv-close">✕</button>
+    </div>
+    <div class="sv-body" id="sv-body">
+      <div class="sv-cat" id="sv-cat">Testimony</div>
+      <div class="sv-caption" id="sv-caption"></div>
+    </div>
+    <div class="sv-nav left" id="sv-prev"></div>
+    <div class="sv-nav right" id="sv-next"></div>
+    <div class="sv-reply-bar"><input id="sv-reply-input" placeholder="Reply to this status…" /></div>
+  </div>
+
+  <!-- ============== CALL OVERLAY ============== -->
+  <div id="call-overlay">
+    <video class="co-video-frame" id="co-remote-video" autoplay playsinline></video>
+    <div class="co-header">
+      <span class="enc"><svg width="13" height="13"><use href="#i-lock"/></svg> End-to-end encrypted</span>
+    </div>
+    <div class="co-body">
+      <div class="co-avatar" id="co-avatar">JM</div>
+      <div class="co-name" id="co-name">Name</div>
+      <div class="co-status" id="co-status">Ringing…</div>
+    </div>
+    <video class="co-self-video" id="co-self-video" autoplay playsinline muted></video>
+    <div class="co-controls" id="co-controls">
+      <div class="co-btn-wrap"><button class="co-btn" id="co-mic" title="Mute">🎤</button><span class="co-btn-label">Mute</span></div>
+      <div class="co-btn-wrap"><button class="co-btn" id="co-cam" title="Camera">📷</button><span class="co-btn-label">Video</span></div>
+      <div class="co-btn-wrap"><button class="co-btn" id="co-spk" title="Speaker">🔊</button><span class="co-btn-label">Speaker</span></div>
+      <div class="co-btn-wrap"><button class="co-btn hang" id="co-hang" title="End call">📱</button><span class="co-btn-label">End</span></div>
+    </div>
+    <div class="co-incoming-controls hidden" id="co-incoming-controls">
+      <div class="co-btn-wrap"><button class="co-btn decline" id="co-decline">📵</button><span class="co-btn-label">Decline</span></div>
+      <div class="co-btn-wrap"><button class="co-btn answer" id="co-answer">📞</button><span class="co-btn-label">Answer</span></div>
+    </div>
+  </div>
+
+  <!-- ============== CONTEXT MENU ============== -->
+  <div class="ctx-menu" id="ctx-menu"></div>
+
+  <!-- ============== TOASTS ============== -->
+  <div id="toast-stack"></div>
+
+  <!-- ============== INSTALL BANNER ============== -->
+  <div class="install-banner" id="install-banner">
+    <img src="./icons/icon-192.png" alt="" />
+    <div class="ib-text">
+      <div class="ib-title">Install JCRGM Connect</div>
+      <div class="ib-sub">Add to home screen for the full app experience</div>
+    </div>
+    <div class="ib-acts">
+      <button class="btn teal" id="ib-install">Install</button>
+      <button class="btn soft" id="ib-dismiss">✕</button>
+    </div>
+  </div>
+
+  <!-- ============== MODAL: GENERIC ============== -->
+  <div class="modal-backdrop" id="modal-root">
+    <div class="modal" id="modal-box">
+      <div class="modal-head">
+        <div class="m-ico" id="m-ico">✨</div>
+        <div style="flex:1">
+          <h3 id="m-title">Title</h3>
+          <div class="m-sub hidden" id="m-sub"></div>
+        </div>
+        <button class="modal-close" id="m-close">✕</button>
+      </div>
+      <div class="modal-body" id="m-body"></div>
+      <div class="modal-foot hidden" id="m-foot"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Hidden file inputs -->
+<input type="file" id="file-image" accept="image/*" class="hidden" />
+<input type="file" id="file-doc" class="hidden" />
+<input type="file" id="file-camera" accept="image/*" capture="environment" class="hidden" />
+
+<script src="./config.js"></script>
+<script src="./js/core.js"></script>
+<script src="./js/cloud.js"></script>
+<script src="./js/ui.js"></script>
+<script src="./js/flows.js"></script>
+</body>
+</html>

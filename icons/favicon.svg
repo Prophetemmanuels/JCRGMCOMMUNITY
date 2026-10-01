@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#075E54"/>
+      <stop offset="55%" stop-color="#128C7E"/>
+      <stop offset="100%" stop-color="#25D366"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE08D"/>
+      <stop offset="100%" stop-color="#DF9F28"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <!-- Bubble Tail -->
+  <polygon points="160,350 96,422 232,390" fill="#FFFFFF"/>
+  <!-- Outer Gold Ring -->
+  <circle cx="256" cy="236" r="182" fill="url(#gold)"/>
+  <!-- White Chat Bubble -->
+  <circle cx="256" cy="236" r="172" fill="#FFFFFF"/>
+  <!-- Inner Deep Emerald Core -->
+  <circle cx="256" cy="236" r="146" fill="#0A4D44"/>
+  <!-- Gold Cross / Beacon Emblem -->
+  <rect x="247" y="128" width="18" height="86" rx="9" fill="url(#gold)"/>
+  <rect x="220" y="152" width="72" height="18" rx="9" fill="url(#gold)"/>
+  <!-- JCRGM Title -->
+  <text x="256" y="272" text-anchor="middle" fill="#FFFFFF" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="60" letter-spacing="2">JCRGM</text>
+  <text x="256" y="314" text-anchor="middle" fill="#FDE08D" font-family="system-ui, -apple-system, sans-serif" font-weight="700" font-size="24" letter-spacing="4">CONNECT</text>
+</svg>
