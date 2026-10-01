@@ -1,5 +1,5 @@
 /* ============================================================================
-   JCRGM CONNECT — automated jsdom smoke suite (76 checks)
+   JCRGM CONNECT — automated jsdom smoke suite (87 checks)
    ----------------------------------------------------------------------------
    Usage:
      1. Serve the repo root:   python3 -m http.server 8080
@@ -262,6 +262,43 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     window.eval("checkPendingInvites()");
     return true;
   });
+
+  console.log("- QR install codes & invites manager -");
+  check("qrcode lib loaded", () => typeof window.qrcode === "function");
+  check("makeQRsvg renders svg", () => {
+    const svg = window.eval("makeQRsvg('https://example.test/install', 6)");
+    return typeof svg === "string" && svg.includes("<svg");
+  });
+  window.eval("openQRInstallModal('https://example.test/app?invite=join', 'test')");
+  await sleep(150);
+  check("QR modal opens", () => $("#m-title").textContent.includes("Scan to install"));
+  check("QR svg in modal", () => !!$("#m-body .qr-frame svg"));
+  check("QR shows link", () => $("#m-body .qr-link").textContent.includes("example.test"));
+  check("QR copy button present", () => !!$("#m-foot #qr-copy"));
+  window.eval("Modal.close()");
+  check("remindSmsLink multi-recipient", () => {
+    const l = window.eval("remindSmsLink(['+260977100200', '0955 208 774'])");
+    return l.startsWith("sms:260977100200,260955208774") && l.includes("body=");
+  });
+  window.eval("openInvitesManager()");
+  await sleep(400);
+  check("invites manager opens (offline state)", () =>
+    $("#m-title").textContent === "Pending invites" &&
+    $("#m-body").innerHTML.includes("Cloud not connected"));
+  window.eval("Modal.close()");
+  check("menu entries QR + invites", () => {
+    window.eval('CtxMenu.open(10,10,[{act:"qr",icon:"x",label:"Invite via QR code"},{act:"invites",icon:"y",label:"Pending invites"}])');
+    const ok = $$("#ctx-menu button").length === 2;
+    window.eval("CtxMenu.close()");
+    return ok;
+  });
+  check("invite modal has QR channel", () => {
+    window.eval("openInstallPromptModal(['0977100200'], null)");
+    return true;
+  });
+  await sleep(700);
+  check("QR button in invite modal", () => !!$("#m-foot #inv-qr"));
+  window.eval("Modal.close()");
 
   console.log("- Calls -");
   window.eval("UI.openRoom('dm-pastor'); startCall('dm-pastor','audio')");

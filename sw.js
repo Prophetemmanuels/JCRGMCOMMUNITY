@@ -7,6 +7,7 @@ const CORE_ASSETS = [
   './supabase-schema.sql',
   './css/styles.css',
   './js/core.js',
+  './js/qrcode.js',
   './js/cloud.js',
   './js/ui.js',
   './js/flows.js',

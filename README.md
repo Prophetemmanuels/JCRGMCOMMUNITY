@@ -29,6 +29,8 @@
 | ☁️ **Supabase Cloud** | Real-time Postgres sync of messages, rooms, statuses, calls & profiles + presence, typing & call signaling — configured in-app or in `config.js` |
 | 📞 **Phone directory** | WhatsApp-style **add by phone number**: search the JCRGM directory, message any number, add group members by phone (group creation **and** group info), local `0977…`/`+260…` normalization, live Supabase lookup, invite links for numbers not registered yet |
 | 📲 **Install prompts** | Numbers **without the app** automatically get an install prompt: pre-filled **SMS / WhatsApp / native Share / Copy** channels, **plus** a pending `jcrgm_invites` cloud record — when that number installs & registers, a 🎉 *"You've been invited"* prompt pops up in-app with one-tap Accept (live via realtime if they're online). Onboarding collects your phone so you can receive invites too |
+| 🔳 **QR scan-to-install** | Built-in MIT QR encoder (fully offline): **Invite via QR code** menu + QR button in every invite modal — visitors scan with their camera, open the PWA and install. Logo centered, crisp SVG rendering |
+| 📨 **Pending-invites manager** | Admin/bulk broadcast screen: every install prompt with Pending/Accepted status, per-number **WhatsApp/SMS reminder** buttons, **Copy all numbers**, and one-tap **Remind all (SMS)** to all pending numbers at once |
 | 🖥️ **Local mode** | Works with **zero backend**: LocalStorage persistence + BroadcastChannel cross-tab sync + demo auto-replies so the app feels alive |
 | 📲 **Installable PWA** | Web app manifest, service worker offline cache, install prompt, app shortcuts (Announcements / Prayer Wall / Status) |
 | 🎨 **Themes** | Dark (WhatsApp default), Light, and Royal (gold/purple ministry theme) |
@@ -114,12 +116,13 @@ jcrgm-connect/
 │   └── styles.css          # Full WhatsApp-style UI, 3 themes
 ├── js/
 │   ├── core.js             # State, storage, utilities, seed data, emoji
+│   ├── qrcode.js           # MIT QR encoder (scan-to-install, vendored)
 │   ├── cloud.js            # Supabase realtime, cross-tab sync, WebRTC signals
 │   ├── ui.js               # Rendering: chat list, chat room, status, calls
 │   └── flows.js            # Modals, status viewer, call engine, events, init
 ├── icons/                  # SVG + PNG icons (192, 512, maskable, Apple) + og-banner
 ├── tests/
-│   ├── smoke.js            # 76-check jsdom E2E suite
+│   ├── smoke.js            # 87-check jsdom E2E suite
 │   └── package.json        # jsdom dev dependency for the suite
 ├── LICENSE                 # MIT
 └── README.md
@@ -149,7 +152,7 @@ modal flows, emoji panel, auto-replies and persistence.
 python3 -m http.server 8080   # serve the repo root
 cd tests
 npm install
-node smoke.js                  # → 76/76 passed, no runtime errors
+node smoke.js                  # → 87/87 passed, no runtime errors
 ```
 
 ---

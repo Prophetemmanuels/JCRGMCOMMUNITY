@@ -412,12 +412,16 @@ async function openInstallPromptModal(numbers, roomId) {
       (canShare ? '<button class="btn teal" id="inv-share">📲 Share</button>' : "") +
       '<a class="btn teal" id="inv-wa" href="https://wa.me/' + first + '?text=' + encodeURIComponent(msg) + '" target="_blank" rel="noopener">💬 WhatsApp</a>' +
       '<a class="btn soft" id="inv-sms" href="sms:' + first + '?&body=' + encodeURIComponent(msg) + '">📩 SMS</a>' +
+      '<button class="btn soft" id="inv-qr">🔳 QR</button>' +
       '<button class="btn soft" id="inv-copy">📋 Copy</button>',
     onOpen(bodyEl, footEl) {
       const copyBtn = footEl.querySelector("#inv-copy");
       if (copyBtn) copyBtn.onclick = () => copyText(msg)
         .then(() => toast("Install prompt copied — paste it anywhere 📋", "success", 2600))
         .catch(() => toast("Copy failed — select the message manually", "error"));
+      const qrBtn = footEl.querySelector("#inv-qr");
+      if (qrBtn) qrBtn.onclick = () => openQRInstallModal(link,
+        numbers.length > 1 ? "Show this code to the new members" : "Show " + formatPhone(numbers[0]));
       const shareBtn = footEl.querySelector("#inv-share");
       if (shareBtn) shareBtn.onclick = () => {
         if (navigator.share) {
@@ -493,6 +497,197 @@ async function checkPendingInvites() {
     STORE.set("pending_invites", mine);
     openInvitedPromptModal(mine);
   } catch (e) { console.warn("checkPendingInvites", e); }
+}
+
+/* ==========================================================================
+   🔳 QR INSTALL CODES — scan-to-install (no app store needed for a PWA)
+   ========================================================================== */
+/** Render a QR code as crisp inline SVG (tries versions 1→40 at EC level M). */
+function makeQRsvg(data, cellSize) {
+  if (typeof window.qrcode !== "function") return "";
+  cellSize = cellSize || 7;
+  for (let t = 1; t <= 40; t++) {
+    try {
+      const qr = window.qrcode(t, "M");
+      qr.addData(String(data));
+      qr.make();
+      return qr.createSvgTag(cellSize, 8, "JCRGM Connect QR code");
+    } catch (e) { /* too small for data → try next version */ }
+  }
+  return "";
+}
+
+/** Scan-to-install QR modal. Payload defaults to the app/invite link. */
+function openQRInstallModal(payload, subtitle) {
+  const link = payload || inviteLink(UI.currentRoom || "join");
+  const svg = makeQRsvg(link, 7);
+  if (!svg) { toast("QR generation failed", "error"); return; }
+  Modal.open({
+    icon: "🔳",
+    title: "Scan to install",
+    sub: subtitle || "Point your camera at the code — no app store needed",
+    body:
+      '<div class="qr-wrap">' +
+        '<div class="qr-frame">' + svg +
+          '<img class="qr-logo" src="./icons/icon-192.png" alt="" />' +
+        "</div>" +
+        '<div class="qr-caption">📲 Open the link on your phone → menu → <b>Install app</b></div>' +
+        '<div class="qr-link">' + esc(link) + "</div>" +
+      "</div>",
+    foot:
+      (typeof navigator !== "undefined" && navigator.share ? '<button class="btn teal" id="qr-share">📲 Share</button>' : "") +
+      '<button class="btn soft" id="qr-copy">📋 Copy link</button>' +
+      '<button class="btn teal" id="qr-done">Done</button>',
+    onOpen(bodyEl, footEl) {
+      footEl.querySelector("#qr-copy").onclick = () => copyText(link)
+        .then(() => toast("Link copied 📋", "success", 1800))
+        .catch(() => toast("Copy failed", "error"));
+      const sh = footEl.querySelector("#qr-share");
+      if (sh) sh.onclick = () => navigator.share && navigator.share({ title: "JCRGM Connect", url: link }).catch(() => {});
+      footEl.querySelector("#qr-done").onclick = () => Modal.close();
+    }
+  });
+}
+
+/* ==========================================================================
+   📨 PENDING INVITES MANAGER — admin/bulk broadcast to numbers that have
+   not installed yet: list, remind via SMS/WhatsApp, copy, bulk resend.
+   ========================================================================== */
+function isInviteAdmin() {
+  return ["Pastor", "Leader", "Administrator", "Deacon"].includes((APP.me && APP.me.role) || "Member");
+}
+
+function remindMessage() {
+  return "🕊️ Reminder — JCRGM Connect is waiting for you!\n\nInstall the app and join the family:\n" +
+    inviteLink("join") + "\n\nMenu → Install app (Add to Home Screen), then register with your number. 📲";
+}
+
+/** Bulk SMS link (comma-separated numbers — Android/iOS multi-recipient). */
+function remindSmsLink(numbers) {
+  const ds = (numbers || []).map(phoneDigits).filter((d) => d.length >= 7);
+  if (!ds.length) return "sms:";
+  return "sms:" + ds.join(",") + "?&body=" + encodeURIComponent(remindMessage());
+}
+
+async function fetchInvitesFromCloud() {
+  if (!Cloud.connected()) return null;
+  try {
+    let q = Cloud.client.from("jcrgm_invites").select("*").order("created_at", { ascending: false }).limit(200);
+    if (!isInviteAdmin()) q = q.eq("inviter_id", APP.me.id);
+    const { data, error } = await q;
+    if (error) throw error;
+    return data || [];
+  } catch (e) { console.warn("fetchInvites", e); return null; }
+}
+
+async function openInvitesManager() {
+  const body =
+    '<div class="conn-status-box local" id="inv-mgr-status"><span class="cs-ico">📨</span>' +
+      '<div><div class="cs-title">Loading pending invites…</div><div class="cs-sub">Querying the JCRGM directory</div></div></div>' +
+    '<div id="inv-mgr-list"></div>';
+  Modal.open({
+    icon: "📨",
+    title: "Pending invites",
+    sub: isInviteAdmin() ? "All install prompts (admin view)" : "Install prompts you sent",
+    body,
+    foot:
+      '<button class="btn soft" id="inv-copy-all">📋 Copy numbers</button>' +
+      '<button class="btn teal" id="inv-remind-all">📨 Remind all (SMS)</button>',
+    onOpen(bodyEl, footEl) {
+      renderInvitesManager(bodyEl, footEl);
+      footEl.querySelector("#inv-copy-all").onclick = () => {
+        const rows = bodyEl.querySelectorAll("[data-inv-phone]");
+        const nums = Array.from(rows).map((r) => r.dataset.invPhone);
+        if (!nums.length) { toast("No pending invites yet", "info"); return; }
+        copyText(nums.join(", ")).then(() => toast(nums.length + " number(s) copied 📋", "success"));
+      };
+      footEl.querySelector("#inv-remind-all").onclick = () => {
+        const rows = Array.from(bodyEl.querySelectorAll("[data-inv-phone]"))
+          .filter((r) => (r.dataset.invStatus || "pending") === "pending");
+        const nums = rows.map((r) => r.dataset.invPhone);
+        if (!nums.length) { toast("No pending invites to remind", "info"); return; }
+        window.location.href = remindSmsLink(nums);
+        toast("Opening SMS with " + nums.length + " number(s) — hit send 📨", "success", 3500);
+      };
+    }
+  });
+}
+
+async function renderInvitesManager(bodyEl, footEl) {
+  const status = bodyEl.querySelector("#inv-mgr-status");
+  const list = bodyEl.querySelector("#inv-mgr-list");
+  const invites = await fetchInvitesFromCloud();
+
+  if (invites === null) {
+    status.className = "conn-status-box bad";
+    status.innerHTML = '<span class="cs-ico">⚠️</span><div><div class="cs-title">Cloud not connected</div>' +
+      '<div class="cs-sub">Connect Supabase to manage pending invites across devices</div></div>';
+    list.innerHTML =
+      '<div class="empty-state" style="padding:22px 8px"><div class="big">📭</div><h3>No cloud sync</h3>' +
+      "<p>Invites are delivered via the SMS / WhatsApp / QR buttons in each invite prompt — connect the cloud to track & remind them here.</p>" +
+      '<button class="btn teal" id="inv-go-cloud" style="width:auto;margin-top:6px">☁️ Connect Supabase</button></div>';
+    const go = bodyEl.querySelector("#inv-go-cloud");
+    if (go) go.onclick = () => { Modal.close(); openCloudModal(); };
+    if (footEl) footEl.classList.add("hidden");
+    return;
+  }
+
+  const pending = invites.filter((i) => i.status === "pending");
+  const accepted = invites.filter((i) => i.status === "accepted");
+  status.className = "conn-status-box ok";
+  status.innerHTML = '<span class="cs-ico">📨</span><div><div class="cs-title">' +
+    pending.length + " pending • " + accepted.length + " accepted</div>" +
+    '<div class="cs-sub">' + (isInviteAdmin() ? "Admin broadcast view — all invites" : "Your sent install prompts") + "</div></div>";
+
+  if (!invites.length) {
+    list.innerHTML = '<div class="empty-state" style="padding:20px 8px"><div class="big">✅</div><h3>No invites yet</h3>' +
+      "<p>When you add a number without the app, its install prompt is logged here automatically.</p></div>";
+    if (footEl) footEl.classList.add("hidden");
+    return;
+  }
+  if (footEl) footEl.classList.remove("hidden");
+
+  list.innerHTML =
+    '<div class="section-label" style="padding:10px 0 4px">📨 Pending (' + pending.length + ")</div>" +
+    inviteRowsHTML(pending) +
+    (accepted.length
+      ? '<div class="section-label" style="padding:12px 0 4px">✅ Accepted (' + accepted.length + ")</div>" + inviteRowsHTML(accepted)
+      : "");
+
+  // per-row actions
+  list.addEventListener("click", (e) => {
+    const wa = e.target.closest("[data-inv-wa]");
+    if (wa) {
+      const d = phoneDigits(wa.dataset.invWa);
+      window.open("https://wa.me/" + d + "?text=" + encodeURIComponent(remindMessage()), "_blank");
+      return;
+    }
+    const sms = e.target.closest("[data-inv-sms]");
+    if (sms) {
+      window.location.href = "sms:" + phoneDigits(sms.dataset.invSms) + "?&body=" + encodeURIComponent(remindMessage());
+    }
+  });
+}
+
+function inviteRowsHTML(list) {
+  return list.map((inv) => {
+    const st = inv.status === "accepted";
+    return (
+      '<div class="ph-card ' + (st ? "found" : "notfound") + '" style="margin-top:8px" ' +
+        'data-inv-phone="' + esc(inv.phone || "") + '" data-inv-status="' + esc(inv.status || "pending") + '">' +
+        '<div class="ph-avatar-ico">' + (st ? "✅" : "📵") + "</div>" +
+        '<div class="ph-info"><div class="ph-name">' + esc(inv.phone_display || inv.phone || "") + "</div>" +
+        '<div class="ph-sub">' + (st ? "Accepted — installed the app" : "Pending — has not installed yet") +
+        (inv.inviter_name ? " • invited by " + esc(inv.inviter_name) : "") + "</div>" +
+        '<div class="ph-sub">' + fmtListTime(inv.created_at) + (inv.room_id ? " • room invite" : "") + "</div></div>" +
+        (st ? '<span class="ph-already">✓ Joined</span>' :
+          '<div class="ph-acts">' +
+            '<a class="btn teal" href="https://wa.me/' + esc(phoneDigits(inv.phone)) + '?text=' + encodeURIComponent(remindMessage()) + '" target="_blank" rel="noopener">💬</a>' +
+            '<a class="btn soft" href="sms:' + esc(phoneDigits(inv.phone)) + '?&body=' + encodeURIComponent(remindMessage()) + '">📩</a>' +
+          "</div>") +
+      "</div>"
+    );
+  }).join("");
 }
 
 function openAddContactModal() {
@@ -1470,6 +1665,8 @@ function wireEvents() {
       { act: "newcommunity", icon: "⛪", label: "New community channel" },
       "-",
       { act: "starred", icon: "⭐", label: "Starred messages" },
+      { act: "qr", icon: "🔳", label: "Invite via QR code" },
+      { act: "invites", icon: "📨", label: "Pending invites…" },
       { act: "cloud", icon: "☁️", label: "Supabase Cloud…" },
       { act: "settings", icon: "⚙️", label: "Settings" },
       { act: "install", icon: "📲", label: "Install app" },
