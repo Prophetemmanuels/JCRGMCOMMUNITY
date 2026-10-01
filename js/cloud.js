@@ -182,6 +182,8 @@ const Cloud = {
     ch.on("postgres_changes", { event: "INSERT", schema: "public", table: "jcrgm_calls" }, (p) => this.onCloudCall(p.new));
     ch.on("postgres_changes", { event: "INSERT", schema: "public", table: "jcrgm_profiles" }, (p) => this.onCloudProfile(p.new));
     ch.on("postgres_changes", { event: "UPDATE", schema: "public", table: "jcrgm_profiles" }, (p) => this.onCloudProfile(p.new, true));
+    ch.on("postgres_changes", { event: "INSERT", schema: "public", table: "jcrgm_invites" }, (p) => this.onCloudInvite(p.new));
+    ch.on("postgres_changes", { event: "UPDATE", schema: "public", table: "jcrgm_invites" }, (p) => this.onCloudInvite(p.new));
 
     // Broadcast: typing / presence / WebRTC signals
     ch.on("broadcast", { event: "typing" }, (p) => this.onTyping(p.payload));
@@ -288,6 +290,24 @@ const Cloud = {
     saveDB();
     UI.renderChatList();
     this.broadcastLocal({ type: "profile", profile: p });
+  },
+
+  /** A pending install invite appeared in the cloud — prompt if it's for MY number. */
+  onCloudInvite(inv) {
+    if (!inv || !inv.phone || !APP.me || !APP.me.handle) return;
+    if (inv.status !== "pending") return;
+    if (inv.inviter_id === (APP.me && APP.me.id)) return;
+    const q = phoneDigits(APP.me.handle);
+    const i = phoneDigits(inv.phone);
+    if (!q || !i) return;
+    if (i === q || (i.length >= 8 && q.endsWith(i.slice(-8)))) {
+      setTimeout(() => {
+        if (typeof openInvitedPromptModal === "function") {
+          STORE.set("pending_invites", [inv]);
+          openInvitedPromptModal([inv]);
+        }
+      }, 900);
+    }
   },
 
   increaseUnread(msg, mine) {

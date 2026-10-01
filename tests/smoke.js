@@ -1,5 +1,5 @@
 /* ============================================================================
-   JCRGM CONNECT — automated jsdom smoke suite (65 checks)
+   JCRGM CONNECT — automated jsdom smoke suite (76 checks)
    ----------------------------------------------------------------------------
    Usage:
      1. Serve the repo root:   python3 -m http.server 8080
@@ -222,6 +222,46 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   check("add-member modal opens", () => $("#m-title").textContent === "Add member");
   window.eval("Modal.close()");
   check("contactFromNumber formats handle", () => window.eval("contactFromNumber('0964 111 222').handle") === "+260 964 111 222");
+
+  console.log("- Install prompts (numbers without the app) -");
+  check("buildInstallMessage has link", () =>
+    window.eval("buildInstallMessage('https://x.test/app/')").includes("https://x.test/app/"));
+  const ciVal = await window.eval("createInvite('0964111222', null)");
+  check("createInvite builds pending invite", () => {
+    return ciVal && ciVal.invite.phone === "+260964111222" &&
+      ciVal.invite.status === "pending" && ciVal.logged === false;
+  });
+
+  window.eval("openInstallPromptModal(['0964111222'], null)");
+  await sleep(800);
+  check("invite modal opens", () =>
+    $("#modal-root").classList.contains("show") && $("#m-title").textContent.toLowerCase().includes("install"));
+  check("WhatsApp channel present", () => {
+    const a = $("#m-foot #inv-wa");
+    return a && a.getAttribute("href").includes("wa.me/260964111222");
+  });
+  check("SMS channel present", () => {
+    const a = $("#m-foot #inv-sms");
+    return a && a.getAttribute("href").startsWith("sms:");
+  });
+  check("message box shows install link", () =>
+    $("#m-body .invite-msg-box") && $("#m-body .invite-msg-box").textContent.includes("index.html"));
+  check("offline shows send-now warning", () => !!$("#m-body .invite-logged.warn"));
+  check("row shows 'no app yet'", () =>
+    $("#m-body").innerHTML.includes("Does not have the app yet"));
+  window.eval("Modal.close()");
+
+  window.eval("openInvitedPromptModal([{id:'inv-t', phone:'+260977100200', inviter_name:'Pastor David Mwale', room_id:'jcrgm-prayer', status:'pending'}])");
+  await sleep(120);
+  check("invitee welcome prompt renders", () =>
+    $("#m-title").textContent === "You've been invited!" &&
+    $("#m-body").innerHTML.includes("Pastor David Mwale"));
+  check("accept button present", () => !!$("#m-foot #inv-accept"));
+  window.eval("Modal.close()");
+  check("checkPendingInvites safe w/o cloud", () => {
+    window.eval("checkPendingInvites()");
+    return true;
+  });
 
   console.log("- Calls -");
   window.eval("UI.openRoom('dm-pastor'); startCall('dm-pastor','audio')");

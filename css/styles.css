@@ -1445,6 +1445,45 @@ img { display: block; }
 }
 .phone-chip button:hover { background: var(--danger); color: #fff; }
 
+/* ---- Install prompt (invite) modal ---- */
+.invite-msg-box {
+  background: var(--bg-input);
+  border: 1.5px dashed rgba(0, 168, 132, 0.55);
+  border-radius: 12px;
+  padding: 13px 15px;
+  font-size: 13.2px;
+  line-height: 1.62;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  margin: 4px 0 12px;
+  max-height: 170px;
+  overflow-y: auto;
+}
+.invite-logged {
+  background: rgba(37, 211, 102, 0.1);
+  border: 1px solid rgba(37, 211, 102, 0.4);
+  color: #7ce8a8;
+  border-radius: 10px;
+  padding: 10px 13px;
+  font-size: 12.6px;
+  line-height: 1.55;
+}
+.invite-logged.warn {
+  background: rgba(223, 159, 40, 0.1);
+  border-color: rgba(223, 159, 40, 0.45);
+  color: var(--gold);
+}
+[data-theme="light"] .invite-logged { color: #0a7d4a; }
+[data-theme="light"] .invite-logged.warn { color: #9a6a10; }
+.invited-hero { text-align: center; font-size: 54px; margin: 4px 0 12px; animation: popIn 0.3s ease-out; }
+.modal-foot a.btn {
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+  line-height: 1.3;
+}
+.modal-foot { flex-wrap: wrap; }
+
 .about-foot { text-align: center; padding: 16px 10px 8px; color: var(--text-muted); font-size: 11.5px; line-height: 1.7; }
 .about-foot .brand-inline { color: var(--wa-teal); font-weight: 800; letter-spacing: 0.8px; }
 

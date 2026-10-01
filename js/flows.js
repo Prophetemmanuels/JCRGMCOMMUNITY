@@ -20,6 +20,12 @@ function renderOnboardingMe() {
 function completeOnboarding() {
   const name = $("#ob-name").value.trim();
   if (name.length < 2) { toast("Please enter your display name (2+ characters)", "error"); $("#ob-name").focus(); return; }
+  const phone = $("#ob-phone").value.trim();
+  let handle = "";
+  if (phone) {
+    if (phoneDigits(phone).length < 7) { toast("That phone number looks too short", "error"); $("#ob-phone").focus(); return; }
+    handle = formatPhone(phone);
+  }
   const color = ($("#ob-colors .color-dot.sel") || {}).dataset ? $("#ob-colors .color-dot.sel").dataset.color : ONBOARD_COLORS[0];
   APP.me = {
     id: uid("user"),
@@ -27,12 +33,17 @@ function completeOnboarding() {
     role: $("#ob-role").value,
     department: $("#ob-dept").value.trim() || "Community",
     color: color || ONBOARD_COLORS[0],
-    handle: "",
+    handle,
     bio: "Connected on JCRGM Connect"
   };
   STORE.set("me", APP.me);
   seedIfNeeded();
   enterApp();
+  // Phone identity → directory + pending install invites
+  if (APP.me.handle) {
+    Cloud.upsertMyProfile();
+    if (Cloud.connected()) setTimeout(() => checkPendingInvites(), 1600);
+  }
 }
 
 function enterApp() {
@@ -114,7 +125,7 @@ async function handlePhoneSearch(raw, outEl) {
       '<div class="ph-sub">Not on JCRGM Connect yet</div></div>' +
       '<div class="ph-acts">' +
         '<button class="btn teal" data-ph-anyway="' + esc(raw) + '">Message anyway</button>' +
-        '<button class="btn soft" data-ph-invite="' + esc(raw) + '">Copy invite link</button>' +
+        '<button class="btn teal" data-ph-invite="' + esc(raw) + '">📲 Invite to install</button>' +
       "</div>" +
     "</div>";
 }
@@ -224,6 +235,10 @@ function openNewGroupModal(mode) {
         Modal.close();
         toast(isCommunity ? "Channel created 📢" : "Group created 👥", "success");
         UI.openRoom(room.id, { focus: true });
+        // Numbers without the app must receive the install prompt
+        if (phonePicks.length) {
+          setTimeout(() => openInstallPromptModal(phonePicks.map((p) => p.handle), room.id), 600);
+        }
       };
     }
   });
@@ -276,8 +291,8 @@ function openAddMemberModal(roomId) {
               '<div class="ph-info"><div class="ph-name">' + esc(pretty) + '</div>' +
               '<div class="ph-sub">Not registered yet — add as invited contact?</div></div>' +
               '<div class="ph-acts">' +
-                '<button class="btn teal" data-am-add="' + esc(raw) + '">Add anyway</button>' +
-                '<button class="btn soft" data-ph-invite="' + esc(raw) + '">Invite</button>' +
+                '<button class="btn teal" data-am-invite="' + esc(raw) + '">Add &amp; invite 📲</button>' +
+                '<button class="btn soft" data-ph-invite="' + esc(raw) + '">Invite only</button>' +
               "</div></div>";
         }
       };
@@ -303,6 +318,181 @@ function addGroupMemberByPhone(roomId, raw) {
   UI.renderChatList();
   if (UI.currentRoom === roomId) { UI.renderChat(); UI.updateChatSub(); }
   return { ok: true, profile: prof };
+}
+
+/* ==========================================================================
+   INSTALL PROMPTS — WhatsApp-style: numbers without the app get an invite
+   to install. Immediate channels: SMS / WhatsApp / native Share / Copy.
+   Cloud channel: pending jcrgm_invites row → the prompt appears inside the
+   app the moment that number installs & registers (or live via realtime).
+   ========================================================================== */
+function buildInstallMessage(link) {
+  return (
+    "🕊️ You're invited to JCRGM Connect!\n\n" +
+    "Install our JCRGM messenger app and chat with the family:\n" +
+    link + "\n\n" +
+    "Open the link on your phone → menu → Install app (Add to Home Screen), " +
+    "then register with this number so we can add you. 📲"
+  );
+}
+
+/** Log a pending invite in Supabase (best-effort) for delivery after install. */
+async function createInvite(raw, roomId) {
+  const link = inviteLink(roomId);
+  const inv = {
+    id: uid("inv"),
+    phone: "+" + phoneDigits(raw),
+    phone_display: formatPhone(raw),
+    inviter_id: APP.me.id,
+    inviter_name: APP.me.name,
+    room_id: roomId ? String(roomId) : null,
+    app_url: link,
+    message: buildInstallMessage(link),
+    status: "pending",
+    created_at: new Date().toISOString()
+  };
+  let logged = false;
+  if (Cloud.connected()) {
+    try {
+      const { error } = await Cloud.client.from("jcrgm_invites").insert({
+        id: inv.id, phone: inv.phone, phone_display: inv.phone_display,
+        inviter_id: inv.inviter_id, inviter_name: inv.inviter_name,
+        room_id: inv.room_id, app_url: inv.app_url, message: inv.message,
+        status: "pending", created_at: inv.created_at
+      });
+      logged = !error;
+      if (error) console.warn("invite insert", error);
+    } catch (e) { console.warn("invite insert", e); }
+  }
+  return { invite: inv, logged };
+}
+
+/** The install-prompt modal shown to the INVITER (send channels). */
+async function openInstallPromptModal(numbers, roomId) {
+  Modal._amRoom = null;
+  if (!Array.isArray(numbers)) numbers = [numbers];
+  numbers = numbers.filter((n) => phoneDigits(n).length >= 7);
+  if (!numbers.length) { toast("Enter a full phone number", "error"); return; }
+
+  const link = inviteLink(roomId);
+  const msg = buildInstallMessage(link);
+  const first = phoneDigits(numbers[0]);
+  const results = [];
+  for (const n of numbers) results.push(await createInvite(n, roomId));
+  const anyLogged = results.some((r) => r.logged);
+
+  const rows = numbers.map((n) => {
+    const d = phoneDigits(n);
+    return (
+      '<div class="ph-card notfound" style="margin-top:8px">' +
+        '<div class="ph-avatar-ico">📵</div>' +
+        '<div class="ph-info"><div class="ph-name">' + esc(formatPhone(n)) + '</div>' +
+        '<div class="ph-sub">Does not have the app yet</div></div>' +
+        '<div class="ph-acts">' +
+          '<a class="btn teal" href="https://wa.me/' + d + '?text=' + encodeURIComponent(msg) + '" target="_blank" rel="noopener">💬 WhatsApp</a>' +
+          '<a class="btn soft" href="sms:' + d + '?&body=' + encodeURIComponent(msg) + '">📩 SMS</a>' +
+        "</div></div>"
+    );
+  }).join("");
+
+  const cloudNote = anyLogged
+    ? '<div class="invite-logged">✅ Invite logged in the cloud — the install prompt will pop up <b>automatically inside the app</b> when ' + (numbers.length > 1 ? "these numbers" : "this number") + " install" + (numbers.length > 1 ? "" : "s") + " &amp; register with this number.</div>"
+    : '<div class="invite-logged warn">⚠️ Cloud not connected — send via <b>SMS / WhatsApp / Share</b> below so they receive the install link right now.</div>';
+
+  const canShare = typeof navigator !== "undefined" && !!navigator.share;
+  Modal.open({
+    icon: "📲",
+    title: numbers.length > 1 ? "Invite " + numbers.length + " members to install" : "Prompt to install JCRGM",
+    sub: "They don't have the app yet — send them the install link",
+    body:
+      '<div class="invite-msg-box">' + esc(msg) + "</div>" +
+      cloudNote +
+      '<div class="section-label" style="padding:12px 0 4px">SEND INSTALL PROMPT TO</div>' + rows,
+    foot:
+      (canShare ? '<button class="btn teal" id="inv-share">📲 Share</button>' : "") +
+      '<a class="btn teal" id="inv-wa" href="https://wa.me/' + first + '?text=' + encodeURIComponent(msg) + '" target="_blank" rel="noopener">💬 WhatsApp</a>' +
+      '<a class="btn soft" id="inv-sms" href="sms:' + first + '?&body=' + encodeURIComponent(msg) + '">📩 SMS</a>' +
+      '<button class="btn soft" id="inv-copy">📋 Copy</button>',
+    onOpen(bodyEl, footEl) {
+      const copyBtn = footEl.querySelector("#inv-copy");
+      if (copyBtn) copyBtn.onclick = () => copyText(msg)
+        .then(() => toast("Install prompt copied — paste it anywhere 📋", "success", 2600))
+        .catch(() => toast("Copy failed — select the message manually", "error"));
+      const shareBtn = footEl.querySelector("#inv-share");
+      if (shareBtn) shareBtn.onclick = () => {
+        if (navigator.share) {
+          navigator.share({ title: "JCRGM Connect", text: msg }).catch(() => {});
+        }
+      };
+      // Mark that the inviter has been offered delivery channels
+      [footEl.querySelector("#inv-wa"), footEl.querySelector("#inv-sms")].forEach((a) => {
+        if (a) a.addEventListener("click", () => toast("Install prompt opened — hit send 📨", "success", 2400));
+      });
+    }
+  });
+}
+
+/** The welcome prompt shown to the INVITEE (after they install & register). */
+function openInvitedPromptModal(invites) {
+  const inv = Array.isArray(invites) ? invites[0] : invites;
+  if (!inv) return;
+  const room = inv.room_id ? DB.rooms.find((r) => r.id === inv.room_id) : null;
+  Modal._pendingInv = inv;
+  Modal.open({
+    icon: "🎉",
+    title: "You've been invited!",
+    body:
+      '<div class="invited-hero">🎉</div>' +
+      '<p style="text-align:center;font-size:15.5px;line-height:1.65;color:var(--text-primary)">' +
+        "<b>" + esc(inv.inviter_name || "A JCRGM member") + "</b> invited you by phone to <b>JCRGM Connect</b>" +
+        (room ? " and to the room <b>" + esc(room.name) + "</b>" : "") + "." +
+      "</p>" +
+      '<p style="text-align:center;font-size:13px;color:var(--text-secondary);margin-top:10px">Your number matched a pending invite — accept to start chatting right away 🕊️</p>',
+    foot:
+      '<button class="btn soft" id="inv-later">Maybe later</button>' +
+      '<button class="btn teal" id="inv-accept">🎉 Accept &amp; open</button>',
+    onOpen(bodyEl, footEl) {
+      footEl.querySelector("#inv-later").onclick = () => Modal.close();
+      footEl.querySelector("#inv-accept").onclick = () => acceptInvite(inv);
+    }
+  });
+}
+
+async function acceptInvite(inv) {
+  Modal.close();
+  try {
+    if (Cloud.connected() && inv.id) {
+      await Cloud.client.from("jcrgm_invites").update({ status: "accepted" }).eq("id", inv.id);
+    }
+  } catch (e) { console.warn("accept invite", e); }
+  const room = inv.room_id ? DB.rooms.find((r) => r.id === inv.room_id) : null;
+  if (room) {
+    UI.openRoom(room.id);
+    postSystem(room.id, "📲 " + APP.me.name + " accepted " + (inv.inviter_name || "an invite") + "'s invite and joined");
+    Cloud.createRoom(room);
+  }
+  toast("Welcome to JCRGM Connect! You're connected 🕊️", "success", 4000);
+}
+
+/** Query pending cloud invites matching MY phone number (post-install prompt). */
+async function checkPendingInvites() {
+  if (!Cloud.connected() || !APP.me || !APP.me.handle) return;
+  const q = phoneDigits(APP.me.handle);
+  if (q.length < 7) return;
+  try {
+    const tail = q.slice(-9);
+    const { data, error } = await Cloud.client.from("jcrgm_invites")
+      .select("*").eq("status", "pending").ilike("phone", "%" + tail + "%").limit(10);
+    if (error || !data || !data.length) return;
+    const mine = data.filter((x) => {
+      const i = phoneDigits(x.phone);
+      return i === q || (i.length >= 8 && q.endsWith(i.slice(-8)));
+    }).filter((x) => x.inviter_id !== APP.me.id);
+    if (!mine.length) return;
+    // Persist locally so the prompt also survives reloads
+    STORE.set("pending_invites", mine);
+    openInvitedPromptModal(mine);
+  } catch (e) { console.warn("checkPendingInvites", e); }
 }
 
 function openAddContactModal() {
@@ -1679,17 +1869,19 @@ document.addEventListener("click", (e) => {
   }
   const phAnyway = e.target.closest("[data-ph-anyway]");
   if (phAnyway) {
-    const p = contactFromNumber(phAnyway.dataset.phAnyway);
+    const raw = phAnyway.dataset.phAnyway;
+    const p = contactFromNumber(raw);
     Modal.close();
     openDirectRoom(p);
-    toast("Contact saved — send them your invite link so they can reply 📲", "gold", 4200);
+    // WhatsApp behavior: the number must receive the install prompt
+    setTimeout(() => openInstallPromptModal([raw], UI.currentRoom), 450);
     return;
   }
   const phInvite = e.target.closest("[data-ph-invite]");
   if (phInvite) {
-    const link = inviteLink(UI.currentRoom || "join");
-    copyText(link).then(() => toast("Invite link copied — send it to them 📲", "success", 3200))
-      .catch(() => toast("Invite link: " + link, "gold", 6000));
+    const raw = phInvite.dataset.phInvite;
+    const targetRoom = Modal._amRoom || null;
+    openInstallPromptModal([raw], targetRoom);
     return;
   }
   const amAdd = e.target.closest("[data-am-add]");
@@ -1701,6 +1893,18 @@ document.addEventListener("click", (e) => {
       Modal.close();
     } else if (res.reason === "duplicate") {
       toast(res.profile.display_name + " is already a member", "info", 2200);
+    }
+    return;
+  }
+  const amInvite = e.target.closest("[data-am-invite]");
+  if (amInvite) {
+    const targetRoom = Modal._amRoom || UI.currentRoom;
+    const raw = amInvite.dataset.amInvite;
+    const res = addGroupMemberByPhone(targetRoom, raw);
+    if (res.ok || res.reason === "duplicate") {
+      if (res.reason === "duplicate") toast(res.profile.display_name + " is already a member", "info", 2000);
+      // Not in directory → they don't have the app → MUST get install prompt
+      openInstallPromptModal([raw], targetRoom);
     }
     return;
   }
@@ -1750,6 +1954,11 @@ async function initApp() {
   }
 
   await Cloud.init();
+
+  // Post-install prompt: match my phone against pending cloud invites
+  if (APP.me && APP.me.handle && Cloud.connected()) {
+    setTimeout(() => checkPendingInvites(), 1500);
+  }
 
   // service worker
   if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
