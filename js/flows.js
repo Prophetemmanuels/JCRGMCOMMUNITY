@@ -49,8 +49,16 @@ function enterApp() {
 function openNewChatModal() {
   const contacts = DB.profiles.filter((p) => p.id !== APP.me.id);
   const body =
-    '<div class="opt-list" style="margin-bottom:14px">' +
-      '<button class="opt-item" data-new="group"><span class="o-ico">👥</span><div><div class="o-title">New Group</div><div class="o-sub">Create a JCRGM fellowship or family group</div></div></button>' +
+    '<div class="phone-search-block">' +
+      '<div class="field" style="margin-bottom:8px"><label>📞 Message a phone number</label>' +
+      '<div class="phone-search-row">' +
+        '<input id="ph-input" type="tel" inputmode="tel" placeholder="+260 977 000 000 or 0977 000 000" />' +
+        '<button class="btn teal" id="ph-search" style="width:auto;padding:10px 18px">Search</button>' +
+      "</div></div>" +
+      '<div id="ph-result"></div>' +
+    "</div>" +
+    '<div class="opt-list" style="margin:12px 0 14px">' +
+      '<button class="opt-item" data-new="group"><span class="o-ico">👥</span><div><div class="o-title">New Group</div><div class="o-sub">Create a JCRGM fellowship or family group — add members by phone 📞</div></div></button>' +
       '<button class="opt-item" data-new="community"><span class="o-ico">⛪</span><div><div class="o-title">New Community / Ministry Channel</div><div class="o-sub">Broadcast announcements to a whole ministry or team</div></div></button>' +
       '<button class="opt-item" data-new="contact"><span class="o-ico">➕</span><div><div class="o-title">New Contact</div><div class="o-sub">Add someone by name or phone number</div></div></button>' +
     "</div>" +
@@ -58,11 +66,57 @@ function openNewChatModal() {
     '<div class="pick-list">' +
       (contacts.length ? contacts.map((p) =>
         '<div class="pick-item" data-dm="' + esc(p.id) + '">' + personAvatarHTML(p, "sm") +
-        '<div><div class="p-name">' + esc(p.display_name) + '</div><div class="p-sub">' + esc(p.role) + " • " + esc(p.department || "") + "</div></div>" +
+        '<div><div class="p-name">' + esc(p.display_name) + '</div><div class="p-sub">' +
+        (p.handle ? esc(formatPhone(p.handle)) + " • " : "") + esc(p.role) + "</div></div>" +
         '<span class="p-check">✓</span></div>').join("")
         : '<div class="empty-state" style="padding:24px 10px"><p>No contacts yet — add one!</p></div>') +
     "</div>";
-  Modal.open({ icon: "💬", title: "New chat", sub: "Start a conversation", body });
+  Modal.open({
+    icon: "💬", title: "New chat", sub: "Search by name or phone number", body,
+    onOpen(bodyEl) {
+      const input = bodyEl.querySelector("#ph-input");
+      const run = () => handlePhoneSearch(input.value, bodyEl.querySelector("#ph-result"));
+      bodyEl.querySelector("#ph-search").onclick = run;
+      input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); run(); } });
+      setTimeout(() => input.focus(), 80);
+    }
+  });
+}
+
+/* ---- WhatsApp-style phone search inside New Chat ---- */
+async function handlePhoneSearch(raw, outEl) {
+  outEl = outEl || $("#ph-result");
+  raw = String(raw || "").trim();
+  if (!raw) { outEl.innerHTML = ""; return; }
+  if (phoneDigits(raw).length < 7) { toast("Enter a full phone number (7+ digits)", "error"); return; }
+
+  outEl.innerHTML = '<div class="ph-loading">🔍 Searching JCRGM directory…</div>';
+  let prof = findByPhone(raw);
+  if (!prof) prof = await findByPhoneCloud(raw);
+  const pretty = formatPhone(raw);
+
+  if (prof && prof.id !== APP.me.id) {
+    outEl.innerHTML =
+      '<div class="ph-card found">' +
+        personAvatarHTML(prof, "sm", prof.online) +
+        '<div class="ph-info"><div class="ph-name">' + esc(prof.display_name) + '</div>' +
+        '<div class="ph-sub">✅ On JCRGM Connect • ' + esc(prof.role) + (prof.department ? " • " + esc(prof.department) : "") + '</div>' +
+        '<div class="ph-sub">' + esc(formatPhone(prof.handle) || pretty) + "</div></div>" +
+        '<div class="ph-acts"><button class="btn teal" data-ph-open="' + esc(prof.id) + '">Message</button></div>' +
+      "</div>";
+    return;
+  }
+
+  outEl.innerHTML =
+    '<div class="ph-card notfound">' +
+      '<div class="ph-avatar-ico">📵</div>' +
+      '<div class="ph-info"><div class="ph-name">' + esc(pretty) + '</div>' +
+      '<div class="ph-sub">Not on JCRGM Connect yet</div></div>' +
+      '<div class="ph-acts">' +
+        '<button class="btn teal" data-ph-anyway="' + esc(raw) + '">Message anyway</button>' +
+        '<button class="btn soft" data-ph-invite="' + esc(raw) + '">Copy invite link</button>' +
+      "</div>" +
+    "</div>";
 }
 
 function openNewGroupModal(mode) {
@@ -77,20 +131,75 @@ function openNewGroupModal(mode) {
     '<div class="section-label" style="padding:6px 0 4px">ADD PARTICIPANTS</div>' +
     '<div class="pick-list">' + contacts.map((p) =>
       '<div class="pick-item" data-pick="' + esc(p.id) + '">' + personAvatarHTML(p, "sm") +
-      '<div><div class="p-name">' + esc(p.display_name) + '</div><div class="p-sub">' + esc(p.role) + "</div></div>" +
-      '<span class="p-check">✓</span></div>').join("") + "</div>";
+      '<div><div class="p-name">' + esc(p.display_name) + '</div><div class="p-sub">' +
+      (p.handle ? esc(formatPhone(p.handle)) + " • " : "") + esc(p.role) + "</div></div>" +
+      '<span class="p-check">✓</span></div>').join("") + "</div>" +
+    '<div class="field" style="margin-top:14px"><label>📞 Add member by phone number</label>' +
+      '<div class="phone-search-row">' +
+        '<input id="grp-phone" type="tel" inputmode="tel" placeholder="+260 977 000 000" />' +
+        '<button class="btn teal" id="grp-phone-add" style="width:auto;padding:10px 16px">Add</button>' +
+      "</div>" +
+      '<div id="grp-phone-chips" class="phone-chips"></div>' +
+    "</div>";
   Modal.open({
     icon: isCommunity ? "⛪" : "👥",
     title: isCommunity ? "New community channel" : "New group",
-    sub: isCommunity ? "One-way broadcast to a ministry or team" : "Add JCRGM members",
+    sub: isCommunity ? "One-way broadcast to a ministry or team" : "Add JCRGM members by name or phone",
     body,
     foot: '<button class="btn soft" onclick="Modal.close()">Cancel</button><button class="btn teal" id="grp-create">Create ' + (isCommunity ? "channel" : "group") + "</button>",
     onOpen(bodyEl, footEl) {
+      /* --- WhatsApp-style: add members by phone number --- */
+      const phonePicks = [];
+      const chipsEl = bodyEl.querySelector("#grp-phone-chips");
+      const renderChips = () => {
+        chipsEl.innerHTML = phonePicks.map((p, i) =>
+          '<span class="phone-chip">' + esc(p.display_name) + '<button data-chip-x="' + i + '" title="Remove">✕</button></span>').join("");
+      };
+      chipsEl.addEventListener("click", (e) => {
+        const x = e.target.closest("[data-chip-x]");
+        if (!x) return;
+        phonePicks.splice(+x.dataset.chipX, 1);
+        renderChips();
+      });
+      const addFromPhone = () => {
+        const input = bodyEl.querySelector("#grp-phone");
+        const raw = input.value.trim();
+        if (phoneDigits(raw).length < 7) { toast("Enter a full phone number", "error"); return; }
+        const existing = findByPhone(raw);
+        if (existing) {
+          const item = bodyEl.querySelector('[data-pick="' + existing.id + '"]');
+          if (item && !item.classList.contains("sel")) {
+            item.classList.add("sel");
+            item.scrollIntoView({ block: "nearest" });
+            toast("Added " + existing.display_name + " ✓", "success", 1800);
+          } else {
+            toast(existing.display_name + " is already selected", "info", 1800);
+          }
+          input.value = "";
+          return;
+        }
+        if (phonePicks.some((p) => phoneDigits(p.handle) === phoneDigits(raw))) {
+          toast("That number is already added", "info", 1800);
+          return;
+        }
+        phonePicks.push({ display_name: formatPhone(raw), handle: formatPhone(raw) });
+        renderChips();
+        input.value = "";
+        toast("Number added — they'll appear as a new contact", "success", 1900);
+      };
+      bodyEl.querySelector("#grp-phone-add").onclick = addFromPhone;
+      bodyEl.querySelector("#grp-phone").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { e.preventDefault(); addFromPhone(); }
+      });
+
       footEl.querySelector("#grp-create").onclick = () => {
         const name = bodyEl.querySelector("#grp-name").value.trim();
         if (name.length < 2) { toast("Please enter a group name", "error"); return; }
-        const picks = bodyEl.querySelectorAll(".pick-item.sel").length;
+        const selIds = Array.from(bodyEl.querySelectorAll(".pick-item.sel")).map((x) => x.dataset.pick);
         const cat = isCommunity ? bodyEl.querySelector("#grp-cat").value : "group";
+        // materialize phone-number picks as contacts (only now, on confirm)
+        const madeIds = phonePicks.map((p) => contactFromNumber(p.handle).id);
+        const memberIds = selIds.concat(madeIds);
         const room = {
           id: uid("room"),
           name,
@@ -101,26 +210,99 @@ function openNewGroupModal(mode) {
           is_group: true,
           is_channel: isCommunity,
           pinned: false,
-          member_count: picks + 1,
+          member_count: memberIds.length + 1,
           description: bodyEl.querySelector("#grp-desc").value.trim(),
-          created_by: APP.me.id
+          created_by: APP.me.id,
+          local_members: memberIds
         };
         Cloud.createRoom(room);
-        // system welcome message
-        const sys = {
-          id: uid("msg"), room_id: room.id, sender_id: "system", sender_name: "JCRGM",
-          sender_role: "System", sender_color: "#075E54", msg_type: "system",
-          content: APP.me.name + ' created ' + (isCommunity ? 'the channel "' : 'the group "') + name + '" 🎉',
-          media_url: "", media_meta: {}, reply_to: null, reactions: {},
-          created_at: new Date().toISOString()
-        };
-        DB.messages.push(sys); saveDB();
+        postSystem(room.id, APP.me.name + ' created ' + (isCommunity ? 'the channel "' : 'the group "') + name + '" 🎉');
+        if (memberIds.length) {
+          const names = memberIds.map((id) => (profileById(id) || {}).display_name || id);
+          postSystem(room.id, "Added: " + names.join(", "));
+        }
         Modal.close();
         toast(isCommunity ? "Channel created 📢" : "Group created 👥", "success");
         UI.openRoom(room.id, { focus: true });
       };
     }
   });
+}
+
+/* ---- Add members to an EXISTING group by phone number (WhatsApp style) ---- */
+function openAddMemberModal(roomId) {
+  const room = DB.rooms.find((r) => r.id === roomId);
+  if (!room) return;
+  if (room.is_channel) {
+    toast("Broadcast channel subscribers are managed by administrators", "gold", 3200);
+    return;
+  }
+  const body =
+    '<div class="conn-status-box local" style="margin-bottom:12px"><span class="cs-ico">👥</span>' +
+      '<div><div class="cs-title">' + esc(room.name) + '</div><div class="cs-sub">' +
+      (room.member_count || 1) + " members • add more by phone number</div></div></div>" +
+    '<div class="field"><label>📞 Phone number</label>' +
+      '<div class="phone-search-row">' +
+        '<input id="am-input" type="tel" inputmode="tel" placeholder="+260 977 000 000 or 0977 000 000" />' +
+        '<button class="btn teal" id="am-search" style="width:auto;padding:10px 18px">Search</button>' +
+      "</div></div>" +
+    '<div id="am-result"></div>' +
+    '<div class="step-hint" style="margin-top:12px">Numbers are matched against the <b>JCRGM directory</b> (device + Supabase Cloud). Numbers that are not registered yet can still be added as invited contacts.</div>';
+  Modal.open({
+    icon: "➕", title: "Add member", sub: "Search by phone number", body,
+    onOpen(bodyEl) {
+      Modal._amRoom = roomId;
+      const input = bodyEl.querySelector("#am-input");
+      const out = bodyEl.querySelector("#am-result");
+      const run = async () => {
+        const raw = input.value.trim();
+        if (phoneDigits(raw).length < 7) { toast("Enter a full phone number", "error"); return; }
+        out.innerHTML = '<div class="ph-loading">🔍 Searching…</div>';
+        let prof = findByPhone(raw);
+        if (!prof) prof = await findByPhoneCloud(raw);
+        const pretty = formatPhone(raw);
+        if (prof) {
+          const already = (room.local_members || []).includes(prof.id);
+          out.innerHTML =
+            '<div class="ph-card found">' + personAvatarHTML(prof, "sm", prof.online) +
+              '<div class="ph-info"><div class="ph-name">' + esc(prof.display_name) + '</div>' +
+              '<div class="ph-sub">' + esc(formatPhone(prof.handle)) + " • " + esc(prof.role) + "</div></div>" +
+              '<div class="ph-acts">' + (already
+                ? '<span class="ph-already">✓ Member</span>'
+                : '<button class="btn teal" data-am-add="' + esc(raw) + '">Add</button>') + "</div></div>";
+        } else {
+          out.innerHTML =
+            '<div class="ph-card notfound"><div class="ph-avatar-ico">📵</div>' +
+              '<div class="ph-info"><div class="ph-name">' + esc(pretty) + '</div>' +
+              '<div class="ph-sub">Not registered yet — add as invited contact?</div></div>' +
+              '<div class="ph-acts">' +
+                '<button class="btn teal" data-am-add="' + esc(raw) + '">Add anyway</button>' +
+                '<button class="btn soft" data-ph-invite="' + esc(raw) + '">Invite</button>' +
+              "</div></div>";
+        }
+      };
+      bodyEl.querySelector("#am-search").onclick = run;
+      input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); run(); } });
+      setTimeout(() => input.focus(), 80);
+    }
+  });
+}
+
+/** Core: add a member to a room by phone number (found or invited). */
+function addGroupMemberByPhone(roomId, raw) {
+  const room = DB.rooms.find((r) => r.id === roomId);
+  if (!room) return { ok: false, reason: "no-room" };
+  const prof = findByPhone(raw) || contactFromNumber(raw);
+  room.local_members = room.local_members || [];
+  if (room.local_members.includes(prof.id)) return { ok: false, reason: "duplicate", profile: prof };
+  room.local_members.push(prof.id);
+  room.member_count = (room.member_count || 1) + 1;
+  saveDB();
+  postSystem(roomId, "✅ " + prof.display_name + " (" + (formatPhone(prof.handle) || "phone") + ") was added by " + APP.me.name);
+  Cloud.createRoom(room);
+  UI.renderChatList();
+  if (UI.currentRoom === roomId) { UI.renderChat(); UI.updateChatSub(); }
+  return { ok: true, profile: prof };
 }
 
 function openAddContactModal() {
@@ -141,7 +323,7 @@ function openAddContactModal() {
         const p = {
           id: uid("contact"),
           display_name: name,
-          handle: phone,
+          handle: phone ? formatPhone(phone) : "",
           role: bodyEl.querySelector("#ct-role").value,
           department: bodyEl.querySelector("#ct-dept").value.trim() || "Community",
           bio: "New JCRGM contact",
@@ -599,16 +781,23 @@ function openProfileScreen(target) {
   $("#profile-info").innerHTML = rows.map((r) =>
     '<div class="info-row"><span class="i-ico">' + r[0] + '</span><div><div class="i-label">' + esc(r[1]) + '</div><div class="i-value">' + esc(r[2]) + "</div></div></div>").join("");
 
-  const msgBtn = $("#profile-msg-btn"), callBtn = $("#profile-call-btn");
+      const msgBtn = $("#profile-msg-btn"), callBtn = $("#profile-call-btn"), addBtn = $("#profile-add-member");
   if (prof && !room) {
     msgBtn.style.display = callBtn.style.display = "";
+    hideEl(addBtn);
     msgBtn.onclick = () => openDirectRoom(prof);
     callBtn.onclick = () => { const rm = DB.rooms.find((r) => r.category === "direct" && r.contact_id === prof.id); if (rm) { backToMain(); startCall(rm.id, "audio"); } else { openDirectRoom(prof); } };
   } else if (room) {
     msgBtn.style.display = callBtn.style.display = "";
     msgBtn.onclick = () => { $("#screen-profile").classList.remove("active"); $("#screen-chat").classList.add("active"); };
     callBtn.onclick = () => { $("#screen-profile").classList.remove("active"); $("#screen-chat").classList.add("active"); startCall(room.id, "audio"); };
-  } else { msgBtn.style.display = callBtn.style.display = "none"; }
+    if (addBtn) {
+      if (room.is_group && !room.is_channel) {
+        showEl(addBtn);
+        addBtn.onclick = () => openAddMemberModal(room.id);
+      } else hideEl(addBtn);
+    }
+  } else { msgBtn.style.display = callBtn.style.display = "none"; hideEl(addBtn); }
 
   $("#screen-chat").classList.remove("active");
   $("#screen-profile").classList.add("active");
@@ -1046,8 +1235,24 @@ function handleDeepLink() {
   const params = new URLSearchParams(location.search);
   const chat = params.get("chat");
   const tab = params.get("tab");
+  const inv = params.get("invite");
+  if (inv) {
+    STORE.set("pending_invite", inv);
+    if (inv === "join" || !DB.rooms.some((r) => r.id === inv)) {
+      setTimeout(() => toast("🎉 You've been invited to JCRGM Connect!", "success", 4500), 700);
+    }
+  }
   if (tab) switchTab(tab);
   if (chat && DB.rooms.some((r) => r.id === chat)) UI.openRoom(chat);
+  const pending = STORE.get("pending_invite", null);
+  if (pending && pending !== "join" && DB.rooms.some((r) => r.id === pending)) {
+    STORE.del("pending_invite");
+    setTimeout(() => {
+      UI.openRoom(pending);
+      postSystem(pending, APP.me.name + " joined via invite link 📲");
+      toast("Opened the group you were invited to ⛪", "success", 3200);
+    }, 900);
+  }
 }
 
 /* =========================== EVENT WIRING =========================== */
@@ -1464,8 +1669,41 @@ function handleAction(act) {
   }
 }
 
-/* ---- modal delegated clicks (new chat flows) ---- */
+/* ---- modal delegated clicks (new chat flows + phone number actions) ---- */
 document.addEventListener("click", (e) => {
+  const phOpen = e.target.closest("[data-ph-open]");
+  if (phOpen) {
+    const p = profileById(phOpen.dataset.phOpen);
+    if (p) openDirectRoom(p);
+    return;
+  }
+  const phAnyway = e.target.closest("[data-ph-anyway]");
+  if (phAnyway) {
+    const p = contactFromNumber(phAnyway.dataset.phAnyway);
+    Modal.close();
+    openDirectRoom(p);
+    toast("Contact saved — send them your invite link so they can reply 📲", "gold", 4200);
+    return;
+  }
+  const phInvite = e.target.closest("[data-ph-invite]");
+  if (phInvite) {
+    const link = inviteLink(UI.currentRoom || "join");
+    copyText(link).then(() => toast("Invite link copied — send it to them 📲", "success", 3200))
+      .catch(() => toast("Invite link: " + link, "gold", 6000));
+    return;
+  }
+  const amAdd = e.target.closest("[data-am-add]");
+  if (amAdd) {
+    const targetRoom = Modal._amRoom || UI.currentRoom;
+    const res = addGroupMemberByPhone(targetRoom, amAdd.dataset.amAdd);
+    if (res.ok) {
+      toast(res.profile.display_name + " added ✓", "success", 2200);
+      Modal.close();
+    } else if (res.reason === "duplicate") {
+      toast(res.profile.display_name + " is already a member", "info", 2200);
+    }
+    return;
+  }
   const dm = e.target.closest("[data-dm]");
   if (dm) { openDirectRoom(profileById(dm.dataset.dm)); return; }
   const pick = e.target.closest("[data-pick]");

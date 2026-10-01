@@ -1,5 +1,5 @@
 /* ============================================================================
-   JCRGM CONNECT — automated jsdom smoke suite (54 checks)
+   JCRGM CONNECT — automated jsdom smoke suite (65 checks)
    ----------------------------------------------------------------------------
    Usage:
      1. Serve the repo root:   python3 -m http.server 8080
@@ -185,6 +185,43 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   click($("#m-foot #st-go"));
   await sleep(200);
   check("status created", () => window.eval("DB.statuses.some(s=>s.caption.includes('Test status'))"));
+
+  console.log("- Phone number directory (WhatsApp-style) -");
+  check("normalize local format", () => window.eval("normalizePhone('0977 100 200')") === "260977100200");
+  check("normalize intl format", () => window.eval("normalizePhone('+260 955 208 774')") === "260955208774");
+  check("pretty format", () => window.eval("formatPhone('0977100200')") === "+260 977 100 200");
+  check("findByPhone local prefix", () => {
+    const p = window.eval("JSON.stringify(findByPhone('0955 208 774') || null)");
+    return p && p.includes("u-joseph");
+  });
+  check("findByPhone international", () => window.eval("(findByPhone('+260 977 100 200') || {}).id") === "u-pastor");
+
+  window.eval("openNewChatModal()");
+  await sleep(150);
+  $("#ph-input").value = "+260 977 100 200";
+  click($("#ph-search"));
+  await sleep(500);
+  check("phone search finds member", () => $("#ph-result").innerHTML.includes("Pastor David Mwale") && !!$("[data-ph-open]"));
+  $("#ph-input").value = "0964 111 222";
+  click($("#ph-search"));
+  await sleep(500);
+  check("unknown number offers invite", () => !!$("[data-ph-anyway]") && !!$("[data-ph-invite]"));
+  window.eval("Modal.close()");
+
+  check("addGroupMemberByPhone works", () => {
+    const res = window.eval("(function(){ var g=DB.rooms.find(r=>r.name==='JCRGM Test Cell Group'); return JSON.stringify(addGroupMemberByPhone(g.id,'+260 979 611 032')); })()");
+    const count = window.eval("JSON.stringify((DB.rooms.find(r=>r.name==='JCRGM Test Cell Group')||{}).member_count)");
+    return JSON.parse(res).ok === true && JSON.parse(count) >= 5;
+  });
+  check("system message posted on add", () => window.eval("DB.messages.some(m=>m.msg_type==='system' && m.content.includes('was added by'))"));
+  check("duplicate member blocked", () => {
+    const res = window.eval("(function(){ var g=DB.rooms.find(r=>r.name==='JCRGM Test Cell Group'); return JSON.stringify(addGroupMemberByPhone(g.id,'+260 979 611 032')); })()");
+    return JSON.parse(res).reason === "duplicate";
+  });
+  window.eval("openAddMemberModal(DB.rooms.find(r=>r.name==='JCRGM Test Cell Group').id)");
+  check("add-member modal opens", () => $("#m-title").textContent === "Add member");
+  window.eval("Modal.close()");
+  check("contactFromNumber formats handle", () => window.eval("contactFromNumber('0964 111 222').handle") === "+260 964 111 222");
 
   console.log("- Calls -");
   window.eval("UI.openRoom('dm-pastor'); startCall('dm-pastor','audio')");

@@ -381,7 +381,7 @@ const Cloud = {
     if (this.connected()) {
       try {
         const row = Object.assign({}, room);
-        delete row.unread; delete row.contact_id;
+        delete row.unread; delete row.contact_id; delete row.local_members;
         await this.client.from("jcrgm_rooms").upsert(row);
       } catch (e) { console.warn("createRoom", e); }
     }

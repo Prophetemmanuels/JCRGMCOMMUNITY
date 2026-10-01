@@ -27,6 +27,7 @@
 | 🎤 **Voice notes** | Real microphone recording (MediaRecorder) with live waveform, playback with scrubbing bars |
 | 📞 **Calls** | Full-screen audio/video call UI with WebRTC peer connection + Supabase broadcast signaling, call log with missed badges |
 | ☁️ **Supabase Cloud** | Real-time Postgres sync of messages, rooms, statuses, calls & profiles + presence, typing & call signaling — configured in-app or in `config.js` |
+| 📞 **Phone directory** | WhatsApp-style **add by phone number**: search the JCRGM directory, message any number, add group members by phone (group creation **and** group info), local `0977…`/`+260…` normalization, live Supabase lookup, invite links for numbers not registered yet |
 | 🖥️ **Local mode** | Works with **zero backend**: LocalStorage persistence + BroadcastChannel cross-tab sync + demo auto-replies so the app feels alive |
 | 📲 **Installable PWA** | Web app manifest, service worker offline cache, install prompt, app shortcuts (Announcements / Prayer Wall / Status) |
 | 🎨 **Themes** | Dark (WhatsApp default), Light, and Royal (gold/purple ministry theme) |
@@ -115,7 +116,7 @@ jcrgm-connect/
 │   └── flows.js            # Modals, status viewer, call engine, events, init
 ├── icons/                  # SVG + PNG icons (192, 512, maskable, Apple) + og-banner
 ├── tests/
-│   ├── smoke.js            # 53-check jsdom E2E suite
+│   ├── smoke.js            # 65-check jsdom E2E suite
 │   └── package.json        # jsdom dev dependency for the suite
 ├── LICENSE                 # MIT
 └── README.md
@@ -145,7 +146,7 @@ modal flows, emoji panel, auto-replies and persistence.
 python3 -m http.server 8080   # serve the repo root
 cd tests
 npm install
-node smoke.js                  # → 53/53 passed, no runtime errors
+node smoke.js                  # → 65/65 passed, no runtime errors
 ```
 
 ---

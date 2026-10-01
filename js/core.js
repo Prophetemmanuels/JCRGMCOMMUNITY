@@ -131,6 +131,90 @@ function throttle(fn, ms) {
   };
 }
 function isPhone(v) { return /^(\+?\d[\d\s\-()]{6,15})$/.test(String(v).trim()); }
+
+/* ---- WhatsApp-style phone identity helpers ---- */
+function normalizePhone(v) {
+  let d = String(v || "").replace(/[^\d+]/g, "");
+  if (d.startsWith("+")) d = d.slice(1);
+  if (/^0\d{9}$/.test(d)) d = "260" + d.slice(1);       // local Zambian: 0977… → 260977…
+  if (/^260\d{9}$/.test(d)) return d;                    // full international
+  d = d.replace(/^0+/, "");                              // generic strip leading zeros
+  return d;
+}
+function phoneDigits(v) { return normalizePhone(v).replace(/\D/g, ""); }
+function formatPhone(v) {
+  const d = phoneDigits(v);
+  if (d.startsWith("260") && d.length === 12) return "+260 " + d.slice(3, 6) + " " + d.slice(6, 9) + " " + d.slice(9);
+  if (d.length > 3) return "+" + d;
+  return v || "";
+}
+/** Find a JCRGM profile by phone number (exact, then tail-match). */
+function findByPhone(v) {
+  const q = phoneDigits(v);
+  if (q.length < 7) return null;
+  const exact = DB.profiles.find((p) => p.handle && phoneDigits(p.handle) === q);
+  if (exact) return exact;
+  return DB.profiles.find((p) => p.handle && q.length >= 8 && phoneDigits(p.handle).endsWith(q.slice(-8))) || null;
+}
+/** Live lookup in Supabase profiles when cloud is connected. */
+async function findByPhoneCloud(v) {
+  if (!Cloud.connected()) return null;
+  const q = phoneDigits(v);
+  if (q.length < 7) return null;
+  try {
+    const tail = q.slice(-9);
+    const { data, error } = await Cloud.client.from("jcrgm_profiles")
+      .select("*").ilike("handle", "%" + tail + "%").limit(6);
+    if (error || !data || !data.length) return null;
+    const hit = data.find((p) => p.handle && (phoneDigits(p.handle) === q || (q.length >= 8 && phoneDigits(p.handle).endsWith(q.slice(-8)))));
+    if (hit) {
+      if (!profileById(hit.id)) { DB.profiles.push(hit); saveDB(); Cloud.broadcastLocal({ type: "profile", profile: hit }); }
+      return profileById(hit.id) || hit;
+    }
+    return null;
+  } catch (e) { console.warn("phone cloud lookup", e); return null; }
+}
+/** Register an unsaved number as a local contact (WhatsApp "message anyway"). */
+function contactFromNumber(v, role) {
+  const d = phoneDigits(v);
+  let p = findByPhone(d);
+  if (p) return p;
+  p = {
+    id: uid("contact"),
+    display_name: formatPhone(v),
+    handle: formatPhone(v),
+    role: role || "Member",
+    department: "Community",
+    bio: "Added by phone number",
+    avatar_color: colorFor(d),
+    online: false,
+    invited: true
+  };
+  DB.profiles.push(p);
+  saveDB();
+  Cloud.broadcastLocal({ type: "profile", profile: p });
+  return p;
+}
+/** Invite link for this deployment (optionally targeting a room). */
+function inviteLink(roomId) {
+  const base = location.origin && location.origin !== "null"
+    ? location.origin + location.pathname
+    : "https://your-user.github.io/jcrgm-connect/";
+  return base + "?invite=" + encodeURIComponent(roomId || "join");
+}
+/** Post a WhatsApp-style system message into a room. */
+function postSystem(roomId, text) {
+  const msg = {
+    id: uid("sys"), room_id: roomId, sender_id: "system", sender_name: "JCRGM",
+    sender_role: "System", sender_color: "#075E54", msg_type: "system",
+    content: text, media_url: "", media_meta: {}, reply_to: null, reactions: {},
+    created_at: new Date().toISOString()
+  };
+  DB.messages.push(msg);
+  saveDB();
+  Cloud.broadcastLocal({ type: "message", msg });
+  return msg;
+}
 function linkify(text) {
   let s = esc(text);
   s = s.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
@@ -140,6 +224,17 @@ function linkify(text) {
   return s;
 }
 function isURL(v) { try { new URL(v); return true; } catch (e) { return false; } }
+function copyText(t) {
+  if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(t);
+  return new Promise((res, rej) => {
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = t; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      document.execCommand("copy"); ta.remove(); res();
+    } catch (e) { rej(e); }
+  });
+}
 
 /* ------------------------------ DOM helpers ------------------------------ */
 const $ = (sel, root) => (root || document).querySelector(sel);

@@ -1379,6 +1379,72 @@ img { display: block; }
 
 .kbd { background: var(--bg-input); border: 1px solid var(--divider); border-bottom-width: 2.5px; padding: 1.5px 7px; border-radius: 6px; font-size: 11.5px; font-family: ui-monospace, monospace; }
 
+/* ============================ PHONE NUMBER SEARCH CARDS ============================ */
+.phone-search-block {
+  background: var(--bg-input);
+  border: 1px solid var(--divider);
+  border-radius: 14px;
+  padding: 13px 14px 12px;
+}
+.phone-search-row { display: flex; gap: 8px; }
+.phone-search-row input {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-panel);
+  border: 1.5px solid var(--divider);
+  color: var(--text-primary);
+  border-radius: 10px;
+  padding: 11px 13px;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.15s;
+  letter-spacing: 0.3px;
+}
+.phone-search-row input:focus { border-color: var(--wa-teal); }
+.ph-loading { font-size: 13px; color: var(--text-secondary); padding: 10px 2px 2px; animation: blink 1.2s infinite; }
+.ph-card {
+  display: flex; align-items: center; gap: 11px;
+  background: var(--bg-panel);
+  border-radius: 12px;
+  padding: 11px 12px;
+  margin-top: 10px;
+  border: 1.5px solid var(--divider);
+  animation: popIn 0.16s ease-out;
+  flex-wrap: wrap;
+}
+.ph-card.found { border-color: rgba(37, 211, 102, 0.55); }
+.ph-card.notfound { border-color: rgba(223, 159, 40, 0.5); }
+.ph-card .avatar { flex-shrink: 0; }
+.ph-avatar-ico { font-size: 24px; width: 40px; text-align: center; flex-shrink: 0; }
+.ph-info { flex: 1; min-width: 130px; }
+.ph-name { font-size: 14.8px; font-weight: 700; }
+.ph-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2.5px; line-height: 1.4; }
+.ph-acts { display: flex; gap: 7px; flex-wrap: wrap; }
+.ph-acts .btn { padding: 8px 13px; font-size: 12.8px; }
+.ph-already { color: var(--wa-green); font-size: 13px; font-weight: 700; white-space: nowrap; }
+
+.phone-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 9px; }
+.phone-chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: rgba(0, 168, 132, 0.16);
+  border: 1px solid rgba(0, 168, 132, 0.5);
+  color: var(--wa-teal);
+  font-size: 13px; font-weight: 600;
+  padding: 6px 8px 6px 12px;
+  border-radius: 17px;
+  animation: popIn 0.14s ease-out;
+}
+.phone-chip button {
+  width: 17px; height: 17px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  color: inherit;
+  font-size: 10.5px;
+  display: flex; align-items: center; justify-content: center;
+  line-height: 1;
+}
+.phone-chip button:hover { background: var(--danger); color: #fff; }
+
 .about-foot { text-align: center; padding: 16px 10px 8px; color: var(--text-muted); font-size: 11.5px; line-height: 1.7; }
 .about-foot .brand-inline { color: var(--wa-teal); font-weight: 800; letter-spacing: 0.8px; }
 
